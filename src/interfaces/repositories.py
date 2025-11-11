@@ -1,0 +1,23 @@
+from abc import ABC, abstractmethod
+from typing import List, Optional
+from src.domain.models import Client, Pet, Appointment
+
+class IClientRepository(ABC):
+    @abstractmethod
+    async def create(self, client: Client) -> str: ...
+    @abstractmethod
+    async def list(self) -> List[Client]: ...
+    @abstractmethod
+    async def get(self, client_id: str) -> Optional[Client]: ...
+
+class IPetRepository(ABC):
+    @abstractmethod
+    async def create(self, pet: Pet) -> str: ...
+    @abstractmethod
+    async def list_by_owner(self, owner_id: str) -> List[Pet]: ...
+
+class IAppointmentRepository(ABC):
+    @abstractmethod
+    async def create(self, appointment: Appointment) -> str: ...
+    @abstractmethod
+    async def list_by_pet(self, pet_id: str) -> List[Appointment]: ...
