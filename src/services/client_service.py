@@ -1,4 +1,4 @@
-# src/services/client_service.py - CÓDIGO COMPLETO Y FINAL
+# src/services/client_service.py - CÓDIGO CORREGIDO PARA EL FLUJO DE CREACIÓN
 from typing import List, Optional
 from src.interfaces.repositories import IClientRepository
 from src.interfaces.logger import ILogger 
@@ -13,14 +13,20 @@ class ClientService:
 
     async def create_client(self, client_data: ClientCreate) -> Client:
         try:
-            client_model = Client(**client_data.dict())
-            client_id = await self.repo.create(client_model)
+            # 💡 FIX CRÍTICO: Pasamos el DTO ClientCreate directamente al repositorio (ver IClientRepository).
+            # El repositorio ahora es responsable de convertir el DTO a un documento MongoDB limpio.
+            client_id = await self.repo.create(client_data) 
+            
+            # El ID se usa para recuperar el modelo completo (incluyendo el ID generado)
             new_client = await self.repo.get(client_id)
+            
             if not new_client:
                 raise RepositoryException("Cliente creado pero falló al recuperar.")
+            
             self.logger.info(f"Cliente registrado con éxito. ID: {client_id}")
             return new_client
         except Exception as e:
+            # Esta excepción envuelve el error de la base de datos y lo convierte a 500 (RepositoryException)
             self.logger.exception("Error creando cliente")
             raise RepositoryException("Error interno del servidor al crear cliente") from e
 

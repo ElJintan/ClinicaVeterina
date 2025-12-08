@@ -1,7 +1,8 @@
-# src/interfaces/repositories.py - CÓDIGO COMPLETO Y CORREGIDO
+# src/interfaces/repositories.py - CÓDIGO CORREGIDO PARA EL CONTRATO DE CREACIÓN
 from abc import ABC, abstractmethod
 from typing import List, Optional, Dict, Any
-from src.domain.models import Client, Pet, Appointment, MedicalRecord, Invoice 
+# Importamos ClientCreate para el contrato
+from src.domain.models import Client, Pet, Appointment, MedicalRecord, Invoice, ClientCreate 
 
 # --- Interfaz Base para CRUD (DIP/SOLID) ---
 class IBaseRepository(ABC):
@@ -19,14 +20,17 @@ class IBaseRepository(ABC):
 # --- Interfaces de Repositorios Específicos ---
 
 class IClientRepository(IBaseRepository):
+    # 💡 FIX CRÍTICO: create() ahora acepta ClientCreate. 
+    # La implementación del repositorio deberá insertar los datos de ClientCreate.
     @abstractmethod
-    async def create(self, client: Client) -> str: pass
+    async def create(self, client_data: ClientCreate) -> str: pass 
     @abstractmethod
     async def list(self) -> List[Client]: pass
     @abstractmethod
     async def get(self, client_id: str) -> Optional[Client]: pass
 
 class IPetRepository(IBaseRepository):
+# ... (mantenido igual para este fix, aunque también debería usar DTOs de creación)
     @abstractmethod
     async def create(self, pet: Pet) -> str: pass
     @abstractmethod
@@ -37,6 +41,7 @@ class IPetRepository(IBaseRepository):
     async def get(self, pet_id: str) -> Optional[Pet]: pass
 
 class IAppointmentRepository(IBaseRepository):
+# ...
     @abstractmethod
     async def create(self, appointment: Appointment) -> str: pass
     @abstractmethod
@@ -47,6 +52,7 @@ class IAppointmentRepository(IBaseRepository):
     async def get(self, appointment_id: str) -> Optional[Appointment]: pass
 
 class IMedicalRecordRepository(IBaseRepository):
+# ...
     @abstractmethod
     async def create(self, record: MedicalRecord) -> str: pass
     @abstractmethod
@@ -57,6 +63,7 @@ class IMedicalRecordRepository(IBaseRepository):
     async def get(self, record_id: str) -> Optional[MedicalRecord]: pass
 
 class IBillingRepository(IBaseRepository):
+# ...
     @abstractmethod
     async def create(self, invoice: Invoice) -> str: pass
     @abstractmethod
