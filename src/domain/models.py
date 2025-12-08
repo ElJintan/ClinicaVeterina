@@ -1,3 +1,4 @@
+# src/domain/models.py - Modelos simplificados sin IDs de relación obligatorios
 from pydantic import BaseModel, Field, EmailStr
 from typing import Optional, List, Dict
 from datetime import datetime
@@ -13,7 +14,8 @@ class AppointmentStatus(str, Enum):
 class Client(BaseModel):
     id: Optional[str] = Field(None, alias="_id")
     name: str
-    email: EmailStr
+    # Email como str simple para evitar la validación estricta 422
+    email: str 
     phone: str
     address: Optional[str] = None
     
@@ -27,7 +29,8 @@ class Pet(BaseModel):
     species: str
     breed: Optional[str] = None
     birthdate: Optional[str] = None
-    owner_id: str
+    # Ya no es un ID, es solo un nombre para mostrar
+    owner_name: Optional[str] = "Desconocido"
     
     class Config:
         populate_by_name = True
@@ -49,7 +52,7 @@ class Appointment(BaseModel):
 
 class ClientCreate(BaseModel):
     name: str
-    email: EmailStr
+    email: str
     phone: str
     address: Optional[str] = None
 
@@ -58,7 +61,8 @@ class PetCreate(BaseModel):
     species: str
     breed: Optional[str] = None
     birthdate: Optional[str] = None
-    owner_id: str 
+    # Campo simplificado sin necesidad de validar un ID existente
+    owner_name: Optional[str] = "Desconocido" 
 
 class AppointmentCreate(BaseModel):
     pet_id: str
@@ -71,7 +75,7 @@ class AppointmentCreate(BaseModel):
 
 class ClientUpdate(BaseModel):
     name: Optional[str] = None
-    email: Optional[EmailStr] = None
+    email: Optional[str] = None
     phone: Optional[str] = None
     address: Optional[str] = None
 
@@ -80,7 +84,7 @@ class PetUpdate(BaseModel):
     species: Optional[str] = None
     breed: Optional[str] = None
     birthdate: Optional[str] = None
-    owner_id: Optional[str] = None 
+    owner_name: Optional[str] = None 
     
 class AppointmentUpdate(BaseModel):
     pet_id: Optional[str] = None
@@ -119,7 +123,8 @@ class MedicalRecordUpdate(BaseModel):
 
 class Invoice(BaseModel):
     id: Optional[str] = Field(None, alias="_id")
-    client_id: str
+    # Ya no es un ID, es solo un nombre para mostrar
+    client_name: Optional[str] = "Desconocido"
     appointment_id: Optional[str] = None
     amount: float
     date: datetime = Field(default_factory=datetime.now)
@@ -131,7 +136,8 @@ class Invoice(BaseModel):
         arbitrary_types_allowed = True
 
 class InvoiceCreate(BaseModel):
-    client_id: str
+    # Campo simplificado sin necesidad de validar un ID existente
+    client_name: Optional[str] = "Desconocido"
     appointment_id: Optional[str] = None
     amount: float
     paid: bool = False
