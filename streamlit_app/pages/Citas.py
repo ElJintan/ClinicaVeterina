@@ -1,4 +1,4 @@
-# streamlit_app/pages/Citas.py - CÓDIGO COMPLETO Y FINAL
+# streamlit_app/pages/Citas.py - CÓDIGO COMPLETO Y FINAL (FIXED USABILITY)
 import streamlit as st
 import sys
 import os
@@ -17,32 +17,37 @@ client_list = get_clients()
 client_map = {c.get('id'): f"{c.get('name', 'N/A')} ({c.get('id', 'N/A')})" for c in client_list if c.get('id')}
 client_ids = list(client_map.keys())
 
-# --- 1. SECCIÓN DE CREACIÓN (SRP) ---
+# --- 1. SECCIÓN DE CREACIÓN (FIXED USABILITY) ---
 with st.expander("➕ Agendar Nueva Cita", expanded=False):
     with st.form("appointment_form"):
         
-        # 1. Selección de Dueño
-        selected_owner_id = st.selectbox(
-            "Dueño (Seleccione)", 
-            options=[""] + client_ids,
-            format_func=lambda x: client_map.get(x, "Seleccione un Dueño") if x else "Seleccione un Dueño",
-            key="owner_id_citas"
+        # 1. CAMBIO: Entrada directa del ID de Dueño (ID Input)
+        selected_owner_id = st.text_input(
+            "ID del Dueño", 
+            key="owner_id_citas_input",
+            help="Ingrese el ID completo del cliente."
         )
         
         pet_options = {}
         if selected_owner_id:
-            # 2. Carga dinámica de mascotas
-            pet_list = get_pets_by_client(selected_owner_id)
-            pet_map = {p.get('id'): f"{p['name']} ({p.get('species', 'N/A')})" for p in pet_list if p.get('id') and p.get('name')}
-            pet_options = pet_map
+            # Usabilidad: Muestra el nombre del dueño si el ID es válido
+            owner_name_display = client_map.get(selected_owner_id)
+            if owner_name_display:
+                st.caption(f"Dueño Seleccionado: **{owner_name_display}**")
+                # 2. Carga dinámica de mascotas
+                pet_list = get_pets_by_client(selected_owner_id)
+                pet_map = {p.get('id'): f"{p['name']} ({p.get('species', 'N/A')})" for p in pet_list if p.get('id') and p.get('name')}
+                pet_options = pet_map
+            else:
+                st.warning("ID de Dueño no encontrado. Ingrese un ID válido para cargar mascotas.")
         
-        # 3. Selección de Mascota
+        # 3. Selección de Mascota (Mantiene Selectbox para opciones dinámicas)
         selected_pet_id = st.selectbox(
             "Mascota (Seleccione)",
             options=[""] + list(pet_options.keys()),
             format_func=lambda x: pet_options.get(x, "Seleccione una mascota") if x else "Seleccione una mascota",
             key="pet_id_citas",
-            disabled=not selected_owner_id
+            disabled=not selected_owner_id or not pet_options
         )
 
         st.write("---")
@@ -62,27 +67,28 @@ with st.expander("➕ Agendar Nueva Cita", expanded=False):
                 
                 if new_appointment:
                     pet_name = pet_options.get(selected_pet_id, "Mascota")
-                    st.success(f"Cita agendada para {pet_name}. ID: {new_appointment.get('id', 'N/A')}")
+                    st.success(f"Cita agendada para {pet_name}. Dueño: {owner_name_display}. ID: {new_appointment.get('id', 'N/A')}")
                     st.rerun()
             else:
-                st.error("Debe completar todos los campos obligatorios.")
+                st.error("Debe ingresar un ID de dueño, seleccionar una mascota y completar todos los campos obligatorios.")
 
 st.write("---")
 
-# --- 2. SECCIÓN DE LISTADO Y ELIMINACIÓN (SRP) ---
+# --- 2. SECCIÓN DE LISTADO Y ELIMINACIÓN (SIN CAMBIOS) ---
 st.header("Citas Registradas")
 appointment_data = get_appointments()
 
 if appointment_data:
     st.dataframe(appointment_data, use_container_width=True)
     
-    # 🗑️ Funcionalidad DELETE
-    st.subheader("Eliminar Cita")
+    # 🗑️ Funcionalidad DELETE (Ya usa text_input)
+    st.subheader("Eliminar Cita por ID")
     col_delete, _ = st.columns([1, 4])
     with col_delete:
         app_to_delete = st.text_input(
             "Ingrese el ID de Cita a Eliminar", 
-            key="delete_app_id_input"
+            key="delete_app_id_input",
+            help="Copie el ID completo de la tabla de arriba para eliminar."
         )
         if app_to_delete and st.button(f"🗑️ Confirmar Eliminación de Cita", type="primary"):
             if delete_appointment(app_to_delete):
