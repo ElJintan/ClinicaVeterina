@@ -1,36 +1,23 @@
+# src/services/appointment_service.py
 from typing import List
 from src.interfaces.repositories import IAppointmentRepository
-from src.domain.models import Appointment
-from datetime import datetime
+from src.interfaces.logger import ILogger
+from src.domain.models import Appointment, AppointmentCreate
+from src.infrastructure.logger_impl import LoggerImpl
 
 class AppointmentService:
-    def __init__(self, repo: IAppointmentRepository):
+    def __init__(self, repo: IAppointmentRepository, logger: ILogger = None):
         self.repo = repo
+        self.logger = logger or LoggerImpl(self.__class__.__name__)
 
-    async def schedule(self, appointment: Appointment) -> str:
-        # Regla: la fecha debe ser en el futuro
-        try:
-            appt_date = datetime.fromisoformat(appointment.date)
-            if appt_date <= datetime.now():
-                raise ValueError('La fecha de la cita debe ser futura')
-        except Exception as e:
-            raise ValueError('Formato de fecha inválido o fecha pasada') from e
-        return await self.repo.create(appointment)
+    async def create_appointment(self, appointment_data: AppointmentCreate) -> Appointment:
+        self.logger.info(f"Scheduling appointment for pet: {appointment_data.pet_id} at {appointment_data.date_time}")
+        
+        appointment_model = Appointment(**appointment_data.dict())
+        appointment_id = await self.repo.create(appointment_model)
+        
+        return Appointment(id=appointment_id, **appointment_data.dict())
 
-    async def list_for_pet(self, pet_id: str) -> List[Appointment]:
-        return await self.repo.list_by_pet(pet_id)
-from datetime import datetime
-from src.interfaces.repositories import IAppointmentRepository
-from src.domain.models import Appointment
-
-class AppointmentService:
-    def __init__(self, repo: IAppointmentRepository):
-        self.repo = repo
-
-    async def schedule(self, appointment: Appointment) -> str:
-        if appointment.date <= datetime.now():
-            raise ValueError('La fecha de la cita debe ser futura')
-        return await self.repo.create(appointment)
-
-    async def list_for_pet(self, pet_id: str):
-        return await self.repo.list_by_pet(pet_id)
+    async def schedule(self, payload):
+        # Alias para compatibilidad
+        return await self.create_appointment(payload)

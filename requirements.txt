@@ -1,9 +1,9 @@
-# requirements.txt - CORREGIDO
+# requirements.txt - AÑADIR requests
 fastapi
 uvicorn[standard]
-pydantic[email]
+pydantic
 motor
 streamlit
 pytest
 pytest-asyncio
-requests # <--- NUEVO: Esencial para la comunicación con la API
+requests

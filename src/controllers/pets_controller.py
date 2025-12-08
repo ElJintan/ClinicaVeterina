@@ -1,16 +1,20 @@
+# src/controllers/pets_controller.py - CORREGIDO
 from fastapi import APIRouter, Depends, status, HTTPException
-from typing import List, Optional # Importar Optional para el parámetro de consulta
+from typing import List, Optional 
 
 from src.domain.models import Pet, PetCreate
 from src.services.pet_service import PetService
-from src.exceptions import NotFoundException, ValidationException
+from src.exceptions import NotFoundException, ValidationException, RepositoryException
+from src.repositories.mongo_repo import MongoPetRepository 
+from src.infrastructure.logger_impl import LoggerImpl 
 
 router = APIRouter()
 
-# Inyección de dependencia (PetService)
+# FIX: Función de inyección de dependencia que crea el servicio con sus dependencias
 def get_pet_service() -> PetService:
-    # Esto asume que PetService puede ser instanciado aquí
-    return PetService()
+    repo = MongoPetRepository()
+    logger = LoggerImpl(PetService.__name__)
+    return PetService(repo=repo, logger=logger) 
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=Pet)
 async def create_pet_endpoint(
@@ -23,36 +27,17 @@ async def create_pet_endpoint(
         return pet
     except ValidationException as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except RepositoryException as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
-# ENDPOINT CORREGIDO: Maneja GET /pets y GET /pets?owner_id={id}
+# FIX: Endpoint único para listado general y por dueño
 @router.get("/", response_model=List[Pet])
 async def list_pets_endpoint(
-    owner_id: Optional[str] = None, # Parámetro de consulta opcional para filtrar
+    owner_id: Optional[str] = None, 
     pet_service: PetService = Depends(get_pet_service)
 ):
     """Obtiene la lista completa de mascotas o mascotas por dueño."""
-    # Principio de Sustitución de Liskov: Si se proporciona un owner_id, 
-    # se usa el método de filtrado. Si no, se usa el método de listado general.
     if owner_id:
         return await pet_service.list_pets_by_owner(owner_id)
     
-    # Asume que PetService tiene un método list_pets() que retorna todas las mascotas.
-    return await pet_service.list_pets() 
-
-@router.get("/{pet_id}", response_model=Pet)
-async def get_pet_endpoint(
-    pet_id: str,
-    pet_service: PetService = Depends(get_pet_service)
-):
-    """Obtiene una mascota por ID."""
-    try:
-        pet = await pet_service.get_pet(pet_id)
-        if not pet:
-            raise NotFoundException(f"Mascota con ID {pet_id} no encontrada.")
-        return pet
-    except NotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-
-# Si tu servicio de mascotas ya tiene un endpoint /owner/{owner_id} definido, 
-# debes asegurarte de que el list_pets_endpoint anterior lo maneje como query param 
-# para evitar ambigüedad de rutas. El código de arriba resuelve ambas necesidades.
+    return await pet_service.list_pets()
