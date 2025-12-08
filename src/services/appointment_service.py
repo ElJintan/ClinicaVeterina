@@ -1,4 +1,4 @@
-# src/services/appointment_service.py
+# src/services/appointment_service.py - CÓDIGO MODIFICADO
 from typing import List
 from src.interfaces.repositories import IAppointmentRepository
 from src.interfaces.logger import ILogger
@@ -11,7 +11,9 @@ class AppointmentService:
         self.logger = logger or LoggerImpl(self.__class__.__name__)
 
     async def create_appointment(self, appointment_data: AppointmentCreate) -> Appointment:
-        self.logger.info(f"Scheduling appointment for pet: {appointment_data.pet_id} at {appointment_data.date_time}")
+        # Cambio: Manejamos si pet_id es None para el log
+        pet_info = appointment_data.pet_id if appointment_data.pet_id else "Sin Mascota"
+        self.logger.info(f"Scheduling appointment for pet: {pet_info} at {appointment_data.date_time}")
         
         appointment_model = Appointment(**appointment_data.dict())
         appointment_id = await self.repo.create(appointment_model)

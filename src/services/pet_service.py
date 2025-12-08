@@ -1,4 +1,4 @@
-# src/services/pet_service.py - CÓDIGO SIN VALIDACIÓN DE DUEÑO
+# src/services/pet_service.py - CÓDIGO MODIFICADO
 from typing import List, Optional
 from src.interfaces.repositories import IPetRepository
 from src.interfaces.logger import ILogger 
@@ -13,7 +13,8 @@ class PetService:
         self.logger = logger or LoggerImpl(self.__class__.__name__)
 
     async def create_pet(self, pet_data: PetCreate) -> Pet:
-        self.logger.info(f"Iniciando registro de mascota para dueño: {pet_data.owner_name}")
+        # Cambio: Se elimina la referencia a pet_data.owner_name
+        self.logger.info(f"Iniciando registro de mascota: {pet_data.name}") 
         try:
             # ELIMINADO: Lógica de Validación de Integridad (Foreign Key Check)
             

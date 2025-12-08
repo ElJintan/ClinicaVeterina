@@ -1,4 +1,4 @@
-# streamlit_app/pages/Citas.py - REESCRITO DECOUPLED Y FOCALIZADO EN PET ID
+# streamlit_app/pages/Citas.py - REESCRITO DECOUPLED (PET ID OPCIONAL)
 import streamlit as st
 import sys
 import os
@@ -7,7 +7,8 @@ from datetime import datetime, date
 
 # FIX CRÍTICO DE IMPORTACIÓN
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from api_client import get_clients, get_pets_by_client, create_appointment, get_appointments, delete_appointment
+# Simplificar imports, ya no necesitamos get_clients ni get_pets_by_client
+from api_client import create_appointment, get_appointments, delete_appointment
 # ------------------------------------------------------------------
 
 st.set_page_config(page_title='Citas', layout='wide')
@@ -15,32 +16,27 @@ st.title('📅 Gestión de Citas')
 
 # --- FUNCIÓN PRINCIPAL (ORQUESTADOR) ---
 def main_citas():
-    # 💡 FIX COEXISTENCIA CRÍTICO: Limpiamos la caché global antes de obtener clientes
+    # 💡 FIX COEXISTENCIA CRÍTICO: Limpiamos la caché global
     st.cache_data.clear()
     
-    # Mantenemos la lista para que la visualización de citas pueda funcionar, pero NO para la creación.
-    client_list = get_clients()
-    client_map = {c.get('id'): f"{c.get('name', 'N/A')} ({c.get('id', 'N/A')})" for c in client_list if c.get('id')}
-    
     # ------------------------------------------------------------------
-    # 1. Componente de Creación de Cita (Decoupled - Solo Pet ID)
+    # 1. Componente de Creación de Cita (Pet ID Opcional)
     # ------------------------------------------------------------------
-    st.header("➕ Agendar Nueva Cita (ID Mascota Directo)")
+    st.header("➕ Agendar Nueva Cita (ID Mascota Opcional)")
     
     with st.form("appointment_form", clear_on_submit=True):
-        st.subheader("Datos del Paciente")
+        st.subheader("Detalles de la Cita")
         
-        # Input directo del ID de Mascota
+        # Input de ID de Mascota, ahora Opcional en el UI
         selected_pet_id_raw = st.text_input(
-            "ID de la Mascota (Obligatorio)", 
+            "ID de la Mascota (Opcional)", 
             key="pet_id_citas_input",
-            help="Ingrese el ID completo de la mascota. El backend validará la existencia."
+            help="Ingrese el ID completo de la mascota. Puede dejarse vacío para una cita genérica."
         )
-        selected_pet_id = selected_pet_id_raw.strip()
+        selected_pet_id = selected_pet_id_raw.strip() if selected_pet_id_raw.strip() else None 
 
         st.divider()
 
-        st.subheader("Detalles de la Cita")
         col1, col2 = st.columns(2)
         with col1:
             date_input = st.date_input("Fecha de Cita", min_value=date.today())
@@ -49,23 +45,27 @@ def main_citas():
         
         reason = st.text_area("Motivo de la Cita (Obligatorio)", placeholder="Ej: Chequeo anual y vacuna.")
         
-        submitted = st.form_submit_button("Confirmar Cita", type="primary", disabled=not selected_pet_id)
+        # El botón ya no está deshabilitado por falta de pet_id
+        submitted = st.form_submit_button("Confirmar Cita", type="primary") 
         
         if submitted:
-            if selected_pet_id and date_input and time_input and reason:
+            # Solo reason, date y time son obligatorios
+            if date_input and time_input and reason:
                 date_str = date_input.strftime("%Y-%m-%d")
                 time_str = time_input.strftime("%H:%M")
 
                 # Llamada directa a la API (decoupled)
+                # Pasamos selected_pet_id que es None si está vacío
                 new_appointment = create_appointment(selected_pet_id, date_str, time_str, reason)
                 
                 if new_appointment:
-                    st.success(f"Cita agendada para Mascota ID: {selected_pet_id} el {date_str} a las {time_str}.")
+                    pet_msg = f"Mascota ID: {selected_pet_id}" if selected_pet_id else "Cita Genérica"
+                    st.success(f"Cita agendada para {pet_msg} el {date_str} a las {time_str}.")
                     st.rerun()
                 else:
-                    st.error(f"Error al agendar. El ID de mascota '{selected_pet_id}' podría ser inválido o el backend falló.")
+                    st.error(f"Error al agendar. El backend falló.")
             else:
-                st.error("Debe ingresar el ID de mascota y completar todos los campos obligatorios.")
+                st.error("Debe completar todos los campos obligatorios (Fecha, Hora y Motivo).")
 
     st.write("---")
 
@@ -82,6 +82,9 @@ def main_citas():
 
     df_app = pd.DataFrame(appointment_data)
     df_app['date_time'] = pd.to_datetime(df_app['date_time']).dt.strftime('%Y-%m-%d %H:%M')
+    
+    # El campo pet_id puede ser None, lo convertimos a string para el display
+    df_app['pet_id'] = df_app['pet_id'].fillna('N/A (Sin Mascota)')
     
     st.dataframe(
         df_app,

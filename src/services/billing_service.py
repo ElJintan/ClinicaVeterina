@@ -1,4 +1,4 @@
-# src/services/billing_service.py - CÓDIGO SIN FILTRADO POR CLIENTE
+# src/services/billing_service.py - CÓDIGO MODIFICADO
 from typing import List, Optional
 from src.interfaces.repositories import IBillingRepository
 from src.interfaces.logger import ILogger
@@ -12,8 +12,11 @@ class BillingService:
         self.logger = logger or LoggerImpl(self.__class__.__name__)
 
     async def create_invoice(self, invoice_data: InvoiceCreate) -> Invoice:
-        self.logger.info(f"Creando factura para cliente: {invoice_data.client_name}")
+        # Cambio: Manejamos si client_name es None para el log
+        client_info = invoice_data.client_name if invoice_data.client_name else "Sin Cliente Asignado"
+        self.logger.info(f"Creando factura para cliente: {client_info}")
         try:
+            # Eliminada la lógica de chequeo de IDs de cliente o cita
             invoice_id = await self.repo.create(invoice_data)
             new_invoice = await self.repo.get(invoice_id)
             if not new_invoice:

@@ -29,8 +29,7 @@ class Pet(BaseModel):
     species: str
     breed: Optional[str] = None
     birthdate: Optional[str] = None
-    # Ya no es un ID, es solo un nombre para mostrar
-    owner_name: Optional[str] = "Desconocido"
+    # Campo 'owner_name' eliminado
     
     class Config:
         populate_by_name = True
@@ -38,7 +37,8 @@ class Pet(BaseModel):
 
 class Appointment(BaseModel):
     id: Optional[str] = Field(None, alias="_id")
-    pet_id: str
+    # pet_id ahora es opcional
+    pet_id: Optional[str] = None
     veterinarian_id: Optional[str] = "Vet-General"
     date_time: datetime 
     reason: str
@@ -61,11 +61,11 @@ class PetCreate(BaseModel):
     species: str
     breed: Optional[str] = None
     birthdate: Optional[str] = None
-    # Campo simplificado sin necesidad de validar un ID existente
-    owner_name: Optional[str] = "Desconocido" 
+    # Campo 'owner_name' eliminado
 
 class AppointmentCreate(BaseModel):
-    pet_id: str
+    # pet_id ahora es opcional
+    pet_id: Optional[str] = None
     veterinarian_id: Optional[str] = "Vet-General"
     date_time: datetime
     reason: str
@@ -84,9 +84,10 @@ class PetUpdate(BaseModel):
     species: Optional[str] = None
     breed: Optional[str] = None
     birthdate: Optional[str] = None
-    owner_name: Optional[str] = None 
+    # Campo 'owner_name' eliminado
     
 class AppointmentUpdate(BaseModel):
+    # pet_id es opcional para actualización
     pet_id: Optional[str] = None
     veterinarian_id: Optional[str] = None
     date_time: Optional[datetime] = None
@@ -97,7 +98,8 @@ class AppointmentUpdate(BaseModel):
 
 class MedicalRecord(BaseModel):
     id: Optional[str] = Field(None, alias="_id")
-    pet_id: str
+    # pet_id ahora es opcional
+    pet_id: Optional[str] = None
     date: datetime = Field(default_factory=datetime.now)
     diagnosis: str
     treatment: str
@@ -109,47 +111,5 @@ class MedicalRecord(BaseModel):
         arbitrary_types_allowed = True
 
 class MedicalRecordCreate(BaseModel):
-    pet_id: str
-    diagnosis: str
-    treatment: str
-    medication: Optional[str] = None
-    notes: Optional[str] = None
-
-class MedicalRecordUpdate(BaseModel):
-    diagnosis: Optional[str] = None
-    treatment: Optional[str] = None
-    medication: Optional[str] = None
-    notes: Optional[str] = None
-
-class Invoice(BaseModel):
-    id: Optional[str] = Field(None, alias="_id")
-    # Ya no es un ID, es solo un nombre para mostrar
-    client_name: Optional[str] = "Desconocido"
-    appointment_id: Optional[str] = None
-    amount: float
-    date: datetime = Field(default_factory=datetime.now)
-    paid: bool = False
-    details: str
-    
-    class Config:
-        populate_by_name = True
-        arbitrary_types_allowed = True
-
-class InvoiceCreate(BaseModel):
-    # Campo simplificado sin necesidad de validar un ID existente
-    client_name: Optional[str] = "Desconocido"
-    appointment_id: Optional[str] = None
-    amount: float
-    paid: bool = False
-    details: str
-    
-class InvoiceUpdate(BaseModel):
-    amount: Optional[float] = None
-    paid: Optional[bool] = None
-    details: Optional[str] = None
-
-class Feedback(BaseModel):
-    id: Optional[str] = Field(None, alias="_id")
-    appointment_id: str
-    rating: int = Field(..., ge=1, le=5)
-    comment: Optional[str] = None
+    # pet_id ahora es opcional
+    pet_id: Optional[str] =
