@@ -13,3 +13,25 @@ app.include_router(appointments_router, prefix='/appointments', tags=['appointme
 @app.get('/')
 async def root():
     return {'message': 'Clínica Veterinaria - SOLID (src)'}
+
+# fragmento para src/main.py (ver bloque completo después)
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+from src.exceptions import AppException
+
+@app.exception_handler(AppException)
+async def app_exception_handler(request: Request, exc: AppException):
+    logger = logging.getLogger("clinica")
+    logger.warning("AppException: %s %s -> %s", request.method, request.url.path, exc.detail)
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+# fragmento para src/main.py (ver bloque completo después)
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+from src.exceptions import AppException
+
+@app.exception_handler(AppException)
+async def app_exception_handler(request: Request, exc: AppException):
+    logger = logging.getLogger("clinica")
+    logger.warning("AppException: %s %s -> %s", request.method, request.url.path, exc.detail)
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+# al inicio
