@@ -1,25 +1,34 @@
-from src.interfaces.repositories import IMedicalRepository, IPetRepository
-from src.domain.models import MedicalRecord
-from src.exceptions import NotFoundException
+# src/services/medical_service.py - CÓDIGO COMPLETO Y FINAL (NUEVO)
+from typing import List, Optional
+from src.interfaces.repositories import IMedicalRecordRepository
+from src.interfaces.logger import ILogger
+from src.domain.models import MedicalRecord, MedicalRecordCreate, MedicalRecordUpdate
+from src.infrastructure.logger_impl import LoggerImpl
 
 class MedicalService:
-    def __init__(self, medical_repo: IMedicalRepository, pet_repo: IPetRepository):
-        self.medical_repo = medical_repo
-        self.pet_repo = pet_repo
+    def __init__(self, repo: IMedicalRecordRepository, logger: ILogger = None):
+        self.repo = repo
+        self.logger = logger or LoggerImpl(self.__class__.__name__)
 
-    async def add_diagnosis(self, pet_id: str, diagnosis: str, treatment: str, medication: str = None) -> str:
-        # Validación: Mascota debe existir
-        pet = await self.pet_repo.get_by_id(pet_id)
-        if not pet:
-            raise NotFoundException(f"No existe mascota con ID {pet_id}")
-        
-        record = MedicalRecord(
-            pet_id=pet_id,
-            diagnosis=diagnosis,
-            treatment=treatment,
-            medication=medication
-        )
-        return await self.medical_repo.add_entry(record)
+    async def create_record(self, record_data: MedicalRecordCreate) -> MedicalRecord:
+        self.logger.info(f"Creando registro médico para mascota: {record_data.pet_id}")
+        record_model = MedicalRecord(**record_data.dict())
+        record_id = await self.repo.create(record_model)
+        # Asumimos que recuperamos el objeto completo para el retorno (con ID y fecha)
+        return await self.repo.get(record_id)
 
-    async def get_pet_history(self, pet_id: str):
-        return await self.medical_repo.get_history(pet_id)
+    async def list_all_records(self) -> List[MedicalRecord]:
+        self.logger.info("Consultando todos los historiales médicos.")
+        return await self.repo.list()
+
+    async def list_records_by_pet(self, pet_id: str) -> List[MedicalRecord]:
+        self.logger.info(f"Consultando historial para mascota: {pet_id}")
+        return await self.repo.list_by_pet(pet_id)
+
+    async def update_record(self, record_id: str, updates: MedicalRecordUpdate) -> Optional[MedicalRecord]:
+        updates_dict = updates.dict(exclude_none=True)
+        if not updates_dict: return await self.repo.get(record_id)
+        return await self.repo.update(record_id, updates_dict)
+
+    async def delete_record(self, record_id: str) -> bool:
+        return await self.repo.delete(record_id)

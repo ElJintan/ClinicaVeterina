@@ -1,4 +1,3 @@
-# src/domain/models.py - CÓDIGO FINAL CON TODOS LOS MODELOS
 from pydantic import BaseModel, Field, EmailStr
 from typing import Optional, List, Dict
 from datetime import datetime

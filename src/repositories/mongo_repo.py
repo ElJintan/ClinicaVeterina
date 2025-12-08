@@ -1,8 +1,10 @@
-# src/repositories/mongo_repo.py - CÓDIGO COMPLETO Y FINAL
-from typing import List, Optional
+# src/repositories/mongo_repo.py - CÓDIGO COMPLETO Y CORREGIDO
+from typing import List, Optional, Dict, Any
 import logging
+# FIX CRÍTICO: Importar BaseModel para las funciones de utilidad
+from pydantic import BaseModel 
 from src.interfaces.repositories import IClientRepository, IPetRepository, IAppointmentRepository, IMedicalRecordRepository, IBillingRepository
-from src.domain.models import Client, Pet, Appointment, MedicalRecord, Invoice
+from src.domain.models import Client, Pet, Appointment, MedicalRecord, Invoice 
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 from bson import ObjectId
@@ -12,8 +14,7 @@ MONGO_URI = os.getenv('MONGO_URI', 'mongodb://mongodb:27017')
 _client: Optional[AsyncIOMotorClient] = None
 _db = None
 
-# Funciones de ciclo de vida (conect_to_mongo y close_mongo_connection)
-# ... (Asumido que este código ya está correcto desde la corrección anterior) ...
+# Funciones de ciclo de vida (LIFESPAN)
 async def connect_to_mongo():
     global _client, _db
     if _client is None:
@@ -32,19 +33,16 @@ async def close_mongo_connection():
     if _client:
         repo_logger.info("Closing MongoDB connection.")
         _client.close()
-# ...
 
+# Funciones de utilidad para CRUD
 async def _update_one(collection, entity_id: str, updates: dict, model_type: BaseModel) -> Optional[BaseModel]:
     if not updates: return None
-    
-    # Prepara el documento de actualización, excluyendo Nones y campos protegidos.
     update_doc = {k: v for k, v in updates.items() if v is not None}
     
     res = await collection.update_one(
         {'_id': ObjectId(entity_id)},
         {'$set': update_doc}
     )
-    
     if res.modified_count == 1:
         return await _get_one(collection, entity_id, model_type)
     return None
@@ -58,6 +56,7 @@ async def _get_one(collection, entity_id: str, model_type: BaseModel) -> Optiona
     if not d: return None
     d['id'] = str(d.get('_id'))
     return model_type(**d)
+
 
 # Repositorios CRUD completos
 class MongoClientRepository(IClientRepository):
@@ -78,10 +77,10 @@ class MongoClientRepository(IClientRepository):
     async def get(self, client_id: str) -> Optional[Client]:
         return await _get_one(self.col, client_id, Client)
 
-    async def update(self, entity_id: str, updates: dict) -> Optional[Client]: # NUEVO
+    async def update(self, entity_id: str, updates: dict) -> Optional[Client]:
         return await _update_one(self.col, entity_id, updates, Client)
     
-    async def delete(self, entity_id: str) -> bool: # NUEVO
+    async def delete(self, entity_id: str) -> bool:
         return await _delete_one(self.col, entity_id)
 
 
@@ -107,10 +106,10 @@ class MongoPetRepository(IPetRepository):
     async def get(self, pet_id: str) -> Optional[Pet]:
         return await _get_one(self.col, pet_id, Pet)
 
-    async def update(self, entity_id: str, updates: dict) -> Optional[Pet]: # NUEVO
+    async def update(self, entity_id: str, updates: dict) -> Optional[Pet]:
         return await _update_one(self.col, entity_id, updates, Pet)
     
-    async def delete(self, entity_id: str) -> bool: # NUEVO
+    async def delete(self, entity_id: str) -> bool:
         return await _delete_one(self.col, entity_id)
 
 class MongoAppointmentRepository(IAppointmentRepository):
@@ -135,13 +134,12 @@ class MongoAppointmentRepository(IAppointmentRepository):
     async def get(self, appointment_id: str) -> Optional[Appointment]:
         return await _get_one(self.col, appointment_id, Appointment)
 
-    async def update(self, entity_id: str, updates: dict) -> Optional[Appointment]: # NUEVO
+    async def update(self, entity_id: str, updates: dict) -> Optional[Appointment]:
         return await _update_one(self.col, entity_id, updates, Appointment)
     
-    async def delete(self, entity_id: str) -> bool: # NUEVO
+    async def delete(self, entity_id: str) -> bool:
         return await _delete_one(self.col, entity_id)
 
-# NUEVO REPOSITORIO: Historial Médico
 class MongoMedicalRecordRepository(IMedicalRecordRepository):
     def __init__(self):
         if _db is None: raise RuntimeError("Repo initialized before connection.")
@@ -170,7 +168,6 @@ class MongoMedicalRecordRepository(IMedicalRecordRepository):
     async def delete(self, entity_id: str) -> bool:
         return await _delete_one(self.col, entity_id)
 
-# NUEVO REPOSITORIO: Facturación
 class MongoBillingRepository(IBillingRepository):
     def __init__(self):
         if _db is None: raise RuntimeError("Repo initialized before connection.")

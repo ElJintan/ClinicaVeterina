@@ -1,37 +1,22 @@
 # src/interfaces/repositories.py - CÓDIGO COMPLETO Y CORREGIDO
 from abc import ABC, abstractmethod
 from typing import List, Optional, Dict, Any
-# Importamos todos los modelos de dominio para que las interfaces los usen
 from src.domain.models import Client, Pet, Appointment, MedicalRecord, Invoice 
 
-# --- Interfaz Base para CRUD (SOLID) ---
+# --- Interfaz Base para CRUD (DIP/SOLID) ---
 class IBaseRepository(ABC):
     @abstractmethod
-    async def create(self, entity: Any) -> str: 
-        """Crea una nueva entidad y retorna su ID."""
-        pass
+    async def create(self, entity: Any) -> str: pass
+    @abstractmethod
+    async def list(self) -> List[Any]: pass
+    @abstractmethod
+    async def get(self, entity_id: str) -> Optional[Any]: pass
+    @abstractmethod
+    async def update(self, entity_id: str, updates: Dict[str, Any]) -> Optional[Any]: pass
+    @abstractmethod
+    async def delete(self, entity_id: str) -> bool: pass
 
-    @abstractmethod
-    async def list(self) -> List[Any]: 
-        """Obtiene una lista de todas las entidades."""
-        pass
-    
-    @abstractmethod
-    async def get(self, entity_id: str) -> Optional[Any]: 
-        """Obtiene una entidad por ID."""
-        pass
-    
-    @abstractmethod
-    async def update(self, entity_id: str, updates: Dict[str, Any]) -> Optional[Any]: 
-        """Actualiza una entidad y retorna el objeto actualizado."""
-        pass
-    
-    @abstractmethod
-    async def delete(self, entity_id: str) -> bool: 
-        """Elimina una entidad y retorna True si tuvo éxito."""
-        pass
-
-# --- Interfaces de Repositorios Específicos (Heredan de IBaseRepository) ---
+# --- Interfaces de Repositorios Específicos ---
 
 class IClientRepository(IBaseRepository):
     @abstractmethod
@@ -61,7 +46,6 @@ class IAppointmentRepository(IBaseRepository):
     @abstractmethod
     async def get(self, appointment_id: str) -> Optional[Appointment]: pass
 
-# FIX CRÍTICO: IMedicalRecordRepository
 class IMedicalRecordRepository(IBaseRepository):
     @abstractmethod
     async def create(self, record: MedicalRecord) -> str: pass
@@ -72,7 +56,6 @@ class IMedicalRecordRepository(IBaseRepository):
     @abstractmethod
     async def get(self, record_id: str) -> Optional[MedicalRecord]: pass
 
-# FIX CRÍTICO: IBillingRepository
 class IBillingRepository(IBaseRepository):
     @abstractmethod
     async def create(self, invoice: Invoice) -> str: pass

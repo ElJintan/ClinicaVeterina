@@ -1,21 +1,29 @@
-from src.interfaces.repositories import IBillingRepository, IClientRepository
-from src.domain.models import Invoice
-from src.exceptions import NotFoundException
+# src/services/billing_service.py - CÓDIGO COMPLETO Y FINAL (NUEVO)
+from typing import List, Optional
+from src.interfaces.repositories import IBillingRepository
+from src.interfaces.logger import ILogger
+from src.domain.models import Invoice, InvoiceCreate, InvoiceUpdate
+from src.infrastructure.logger_impl import LoggerImpl
 
 class BillingService:
-    def __init__(self, billing_repo: IBillingRepository, client_repo: IClientRepository):
-        self.billing_repo = billing_repo
-        self.client_repo = client_repo
+    def __init__(self, repo: IBillingRepository, logger: ILogger = None):
+        self.repo = repo
+        self.logger = logger or LoggerImpl(self.__class__.__name__)
 
-    async def create_invoice(self, client_id: str, amount: float, details: str, appointment_id: str = None) -> str:
-        client = await self.client_repo.get_by_id(client_id)
-        if not client:
-            raise NotFoundException(f"Cliente {client_id} no encontrado")
-        
-        invoice = Invoice(
-            client_id=client_id,
-            appointment_id=appointment_id,
-            amount=amount,
-            details=details
-        )
-        return await self.billing_repo.create_invoice(invoice)
+    async def create_invoice(self, invoice_data: InvoiceCreate) -> Invoice:
+        self.logger.info(f"Creando factura para cliente: {invoice_data.client_id}")
+        invoice_model = Invoice(**invoice_data.dict())
+        invoice_id = await self.repo.create(invoice_model)
+        return await self.repo.get(invoice_id)
+
+    async def list_invoices(self) -> List[Invoice]:
+        self.logger.info("Consultando todas las facturas.")
+        return await self.repo.list()
+
+    async def update_invoice(self, invoice_id: str, updates: InvoiceUpdate) -> Optional[Invoice]:
+        updates_dict = updates.dict(exclude_none=True)
+        if not updates_dict: return await self.repo.get(invoice_id)
+        return await self.repo.update(invoice_id, updates_dict)
+
+    async def delete_invoice(self, invoice_id: str) -> bool:
+        return await self.repo.delete(invoice_id)
