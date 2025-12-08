@@ -1,4 +1,4 @@
-# src/domain/models.py - CÓDIGO COMPLETO Y FINAL
+# src/domain/models.py - CÓDIGO FINAL CON TODOS LOS MODELOS
 from pydantic import BaseModel, Field, EmailStr
 from typing import Optional, List, Dict
 from datetime import datetime
@@ -69,7 +69,6 @@ class AppointmentCreate(BaseModel):
     status: AppointmentStatus = AppointmentStatus.SCHEDULED
 
 # --- Modelos de Actualización (Input DTOs para PUT/PATCH) ---
-# Todos los campos son opcionales para permitir actualizaciones parciales
 
 class ClientUpdate(BaseModel):
     name: Optional[str] = None
