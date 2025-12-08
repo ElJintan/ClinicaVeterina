@@ -19,3 +19,18 @@ class AppointmentService:
 
     async def list_for_pet(self, pet_id: str) -> List[Appointment]:
         return await self.repo.list_by_pet(pet_id)
+from datetime import datetime
+from src.interfaces.repositories import IAppointmentRepository
+from src.domain.models import Appointment
+
+class AppointmentService:
+    def __init__(self, repo: IAppointmentRepository):
+        self.repo = repo
+
+    async def schedule(self, appointment: Appointment) -> str:
+        if appointment.date <= datetime.now():
+            raise ValueError('La fecha de la cita debe ser futura')
+        return await self.repo.create(appointment)
+
+    async def list_for_pet(self, pet_id: str):
+        return await self.repo.list_by_pet(pet_id)

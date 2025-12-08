@@ -1,12 +1,40 @@
 version: '3.8'
 services:
-  mongo:
+  mongodb:
     image: mongo:6
     restart: unless-stopped
     ports:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+
+  backend:
+    # Servicio de la API (FastAPI)
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    container_name: backend_api
+    environment:
+      MONGO_URI: mongodb://mongodb:27017
+    # COMANDO CORREGIDO: Usar uvicorn para la API
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mongodb
+
+  frontend:
+    # Servicio de la interfaz de usuario (Streamlit)
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    container_name: frontend_streamlit
+    ports:
+      - "8501:8501"
+    # COMANDO CORREGIDO: Usar streamlit para la interfaz
+    command: streamlit run streamlit_app/Home.py --server.port 8501 --server.address 0.0.0.0
+    depends_on:
+      - backend
 
 volumes:
   mongo_data:
