@@ -1,6 +1,6 @@
-# src/services/billing_service.py - CÓDIGO MODIFICADO
+# src/services/billing_service.py - CÓDIGO MODIFICADO (SOLID)
 from typing import List, Optional
-from src.interfaces.repositories import IBillingRepository
+from src.interfaces.repositories import IBillingRepository # DIP: Dependencia de Abstracción
 from src.interfaces.logger import ILogger
 from src.domain.models import Invoice, InvoiceCreate, InvoiceUpdate
 from src.infrastructure.logger_impl import LoggerImpl
@@ -12,11 +12,11 @@ class BillingService:
         self.logger = logger or LoggerImpl(self.__class__.__name__)
 
     async def create_invoice(self, invoice_data: InvoiceCreate) -> Invoice:
-        # Cambio: Manejamos si client_name es None para el log
+        # Manejamos si client_name es None para el log (Desacoplamiento)
         client_info = invoice_data.client_name if invoice_data.client_name else "Sin Cliente Asignado"
         self.logger.info(f"Creando factura para cliente: {client_info}")
         try:
-            # Eliminada la lógica de chequeo de IDs de cliente o cita
+            # Creación directa sin validación de ID de cliente o cita (Desacoplamiento)
             invoice_id = await self.repo.create(invoice_data)
             new_invoice = await self.repo.get(invoice_id)
             if not new_invoice:
@@ -26,12 +26,10 @@ class BillingService:
             self.logger.exception("Error creando factura")
             raise RepositoryException("Error interno del servidor al crear factura") from e
 
-
     async def list_invoices(self) -> List[Invoice]:
-        # ELIMINADO: el parámetro client_id y la lógica de filtrado
         self.logger.info("Consultando todas las facturas.")
         return await self.repo.list()
-
+        
     async def get_invoice(self, invoice_id: str) -> Optional[Invoice]:
         self.logger.debug(f"Buscando factura por ID: {invoice_id}")
         return await self.repo.get(invoice_id)

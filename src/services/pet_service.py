@@ -1,4 +1,4 @@
-# src/services/pet_service.py - CÓDIGO MODIFICADO
+# src/services/pet_service.py - CÓDIGO MODIFICADO (SOLID)
 from typing import List, Optional
 from src.interfaces.repositories import IPetRepository
 from src.interfaces.logger import ILogger 
@@ -7,17 +7,14 @@ from src.exceptions import NotFoundException, RepositoryException
 from src.infrastructure.logger_impl import LoggerImpl 
 
 class PetService:
-    # 💡 FIX: Solo inyectamos PetRepository
-    def __init__(self, pet_repo: IPetRepository, logger: ILogger = None):
+    def __init__(self, pet_repo: IPetRepository, logger: ILogger = None): # DIP: Dependencia de Abstracción
         self.pet_repo = pet_repo
         self.logger = logger or LoggerImpl(self.__class__.__name__)
 
     async def create_pet(self, pet_data: PetCreate) -> Pet:
-        # Cambio: Se elimina la referencia a pet_data.owner_name
         self.logger.info(f"Iniciando registro de mascota: {pet_data.name}") 
         try:
-            # ELIMINADO: Lógica de Validación de Integridad (Foreign Key Check)
-            
+            # NO hay validación de dueños (desacoplamiento total)
             pet_id = await self.pet_repo.create(pet_data) 
             new_pet = await self.pet_repo.get(pet_id)
             
@@ -34,10 +31,6 @@ class PetService:
     async def list_pets(self) -> List[Pet]:
         self.logger.info("Consultando lista de mascotas")
         return await self.pet_repo.list()
-
-    # ELIMINADO: list_pets_by_owner ya no existe
-    # async def list_pets_by_owner(self, owner_id: str) -> List[Pet]:
-    #     pass
     
     async def get_pet(self, pet_id: str) -> Optional[Pet]:
         self.logger.debug(f"Buscando mascota por ID: {pet_id}")

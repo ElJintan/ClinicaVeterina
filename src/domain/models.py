@@ -1,4 +1,4 @@
-# src/domain/models.py - Modelos simplificados sin IDs de relación obligatorios
+# src/domain/models.py - Modelos desacoplados y simplificados
 from pydantic import BaseModel, Field, EmailStr
 from typing import Optional, List, Dict
 from datetime import datetime
@@ -14,7 +14,6 @@ class AppointmentStatus(str, Enum):
 class Client(BaseModel):
     id: Optional[str] = Field(None, alias="_id")
     name: str
-    # Email como str simple para evitar la validación estricta 422
     email: str 
     phone: str
     address: Optional[str] = None
@@ -29,7 +28,7 @@ class Pet(BaseModel):
     species: str
     breed: Optional[str] = None
     birthdate: Optional[str] = None
-    # Campo 'owner_name' eliminado
+    # Campo 'owner_name' eliminado para desacoplamiento total
     
     class Config:
         populate_by_name = True
@@ -61,10 +60,8 @@ class PetCreate(BaseModel):
     species: str
     breed: Optional[str] = None
     birthdate: Optional[str] = None
-    # Campo 'owner_name' eliminado
 
 class AppointmentCreate(BaseModel):
-    # pet_id ahora es opcional
     pet_id: Optional[str] = None
     veterinarian_id: Optional[str] = "Vet-General"
     date_time: datetime
@@ -84,10 +81,8 @@ class PetUpdate(BaseModel):
     species: Optional[str] = None
     breed: Optional[str] = None
     birthdate: Optional[str] = None
-    # Campo 'owner_name' eliminado
     
 class AppointmentUpdate(BaseModel):
-    # pet_id es opcional para actualización
     pet_id: Optional[str] = None
     veterinarian_id: Optional[str] = None
     date_time: Optional[datetime] = None
@@ -111,5 +106,49 @@ class MedicalRecord(BaseModel):
         arbitrary_types_allowed = True
 
 class MedicalRecordCreate(BaseModel):
-    # pet_id ahora es opcional
-    pet_id: Optional[str] =
+    pet_id: Optional[str] = None
+    diagnosis: str
+    treatment: str
+    medication: Optional[str] = None
+    notes: Optional[str] = None
+
+class MedicalRecordUpdate(BaseModel):
+    diagnosis: Optional[str] = None
+    treatment: Optional[str] = None
+    medication: Optional[str] = None
+    notes: Optional[str] = None
+
+class Invoice(BaseModel):
+    id: Optional[str] = Field(None, alias="_id")
+    # client_name ahora es simplemente opcional
+    client_name: Optional[str] = None
+    # appointment_id ahora es opcional/eliminado para desacoplar facturas
+    appointment_id: Optional[str] = None
+    amount: float
+    date: datetime = Field(default_factory=datetime.now)
+    paid: bool = False
+    details: str
+    
+    class Config:
+        populate_by_name = True
+        arbitrary_types_allowed = True
+
+class InvoiceCreate(BaseModel):
+    client_name: Optional[str] = None
+    appointment_id: Optional[str] = None
+    amount: float
+    paid: bool = False
+    details: str
+    
+class InvoiceUpdate(BaseModel):
+    amount: Optional[float] = None
+    paid: Optional[bool] = None
+    details: Optional[str] = None
+    client_name: Optional[str] = None 
+
+class Feedback(BaseModel):
+    id: Optional[str] = Field(None, alias="_id")
+    # appointment_id ahora es opcional
+    appointment_id: Optional[str] = None
+    rating: int = Field(..., ge=1, le=5)
+    comment: Optional[str] = None
