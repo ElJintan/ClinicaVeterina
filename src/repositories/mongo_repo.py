@@ -1,99 +1,101 @@
-from typing import List, Optional, Type, TypeVar
+from typing import List, Optional
+import logging
+from src.interfaces.repositories import IClientRepository, IPetRepository, IAppointmentRepository
+from src.domain.models import Client, Pet, Appointment
 from motor.motor_asyncio import AsyncIOMotorClient
-from bson import ObjectId
 import os
-from src.interfaces.repositories import (
-    IClientRepository, IPetRepository, IAppointmentRepository,
-    IMedicalRepository, IBillingRepository, IFeedbackRepository
-)
-from src.domain.models import Client, Pet, Appointment, MedicalRecord, Invoice, Feedback
+from bson import ObjectId
 
-MONGO_URI = os.getenv('MONGO_URI', 'mongodb://localhost:27017')
-_client = AsyncIOMotorClient(MONGO_URI)
-_db = _client['clinic_db']
+# Obtener logger para este módulo
+repo_logger = logging.getLogger(__name__)
 
-T = TypeVar('T')
+MONGO_URI = os.getenv('MONGO_URI', 'mongodb://mongodb:27017')
+# Se inicializan a None para evitar la conexión sincrónica en el momento de la importación
+_client: Optional[AsyncIOMotorClient] = None
+_db = None
 
-# Helper para convertir _id de Mongo a string
-def map_doc(doc, model_class: Type[T]) -> T:
-    if not doc: return None
-    doc['_id'] = str(doc['_id'])
-    return model_class(**doc)
-
-class MongoClientRepository(IClientRepository):
-    def __init__(self): self.col = _db['clients']
-    
-    async def create(self, client: Client) -> str:
-        res = await self.col.insert_one(client.dict(exclude={'id'}, exclude_none=True))
-        return str(res.inserted_id)
-        
-    async def get_all(self) -> List[Client]:
-        docs = await self.col.find().to_list(100)
-        return [map_doc(d, Client) for d in docs]
-        
-    async def get_by_id(self, client_id: str) -> Optional[Client]:
+# Funciones para el ciclo de vida (llamadas desde src/main.py)
+async def connect_to_mongo():
+    """Inicializa la conexión con MongoDB."""
+    global _client, _db
+    if _client is None:
         try:
-            doc = await self.col.find_one({'_id': ObjectId(client_id)})
-            return map_doc(doc, Client)
-        except: return None
+            repo_logger.info("Attempting to connect to MongoDB at %s", MONGO_URI)
+            # Aumentar el timeout por si la BD tarda un poco en arrancar en Docker
+            _client = AsyncIOMotorClient(MONGO_URI, serverSelectionTimeoutMS=5000) 
+            await _client.admin.command('ping') # Verificar la conexión
+            _db = _client['clinic_db']
+            repo_logger.info("Successfully connected to MongoDB.")
+        except Exception as e:
+            repo_logger.error("Failed to connect to MongoDB: %s", e)
+            raise RuntimeError("Database connection failed during startup.") from e
+
+async def close_mongo_connection():
+    """Cierra la conexión con MongoDB."""
+    global _client
+    if _client:
+        repo_logger.info("Closing MongoDB connection.")
+        _client.close()
+
+# Las clases de repositorio verifican que _db esté inicializado
+class MongoClientRepository(IClientRepository):
+    def __init__(self):
+        if _db is None:
+            raise RuntimeError("Repository initialized before MongoDB connection.")
+        self.col = _db['clients']
+
+    async def create(self, client: Client) -> str:
+        doc = client.dict(exclude_none=True)
+        res = await self.col.insert_one(doc)
+        return str(res.inserted_id)
+
+    async def list(self) -> List[Client]:
+        docs = await self.col.find().to_list(100)
+        result = []
+        for d in docs:
+            d['id'] = str(d.get('_id'))
+            result.append(Client(**d))
+        return result
+
+    async def get(self, client_id: str) -> Optional[Client]:
+        d = await self.col.find_one({'_id': ObjectId(client_id)})
+        if not d:
+            return None
+        d['id'] = str(d.get('_id'))
+        return Client(**d)
 
 class MongoPetRepository(IPetRepository):
-    def __init__(self): self.col = _db['pets']
-    
+    def __init__(self):
+        if _db is None:
+            raise RuntimeError("Repository initialized before MongoDB connection.")
+        self.col = _db['pets']
+
     async def create(self, pet: Pet) -> str:
-        res = await self.col.insert_one(pet.dict(exclude={'id'}, exclude_none=True))
+        res = await self.col.insert_one(pet.dict(exclude_none=True))
         return str(res.inserted_id)
 
     async def list_by_owner(self, owner_id: str) -> List[Pet]:
         docs = await self.col.find({'owner_id': owner_id}).to_list(100)
-        return [map_doc(d, Pet) for d in docs]
-        
-    async def get_by_id(self, pet_id: str) -> Optional[Pet]:
-        try:
-            doc = await self.col.find_one({'_id': ObjectId(pet_id)})
-            return map_doc(doc, Pet)
-        except: return None
+        result = []
+        for d in docs:
+            d['id'] = str(d.get('_id'))
+            result.append(Pet(**d))
+        return result
 
 class MongoAppointmentRepository(IAppointmentRepository):
-    def __init__(self): self.col = _db['appointments']
+    def __init__(self):
+        if _db is None:
+            raise RuntimeError("Repository initialized before MongoDB connection.")
+        self.col = _db['appointments']
 
     async def create(self, appointment: Appointment) -> str:
-        res = await self.col.insert_one(appointment.dict(exclude={'id'}, exclude_none=True))
+        res = await self.col.insert_one(appointment.dict(exclude_none=True))
         return str(res.inserted_id)
 
     async def list_by_pet(self, pet_id: str) -> List[Appointment]:
         docs = await self.col.find({'pet_id': pet_id}).to_list(100)
-        return [map_doc(d, Appointment) for d in docs]
-    
-    async def update_status(self, appointment_id: str, status: str) -> bool:
-        res = await self.col.update_one({'_id': ObjectId(appointment_id)}, {'$set': {'status': status}})
-        return res.modified_count > 0
-
-class MongoMedicalRepository(IMedicalRepository):
-    def __init__(self): self.col = _db['medical_records']
-    
-    async def add_entry(self, entry: MedicalRecord) -> str:
-        res = await self.col.insert_one(entry.dict(exclude={'id'}, exclude_none=True))
-        return str(res.inserted_id)
-        
-    async def get_history(self, pet_id: str) -> List[MedicalRecord]:
-        docs = await self.col.find({'pet_id': pet_id}).to_list(100)
-        return [map_doc(d, MedicalRecord) for d in docs]
-
-class MongoBillingRepository(IBillingRepository):
-    def __init__(self): self.col = _db['invoices']
-    
-    async def create_invoice(self, invoice: Invoice) -> str:
-        res = await self.col.insert_one(invoice.dict(exclude={'id'}, exclude_none=True))
-        return str(res.inserted_id)
-        
-    async def get_client_invoices(self, client_id: str) -> List[Invoice]:
-        docs = await self.col.find({'client_id': client_id}).to_list(100)
-        return [map_doc(d, Invoice) for d in docs]
-
-class MongoFeedbackRepository(IFeedbackRepository):
-    def __init__(self): self.col = _db['feedback']
-    
-    async def add_feedback(self, feedback: Feedback) -> str:
-        res = await self.col.insert_one(feedback.dict(exclude={'id'}, exclude_none=True))
-        return str(res.inserted_id)
+        result = []
+        for d in docs:
+            d['id'] = str(d.get('_id'))
+            result.append(Appointment(**d))
+        return result
