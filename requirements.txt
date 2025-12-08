@@ -1,3 +1,4 @@
+# requirements.txt - CORREGIDO
 fastapi
 uvicorn[standard]
 pydantic[email]
@@ -5,3 +6,4 @@ motor
 streamlit
 pytest
 pytest-asyncio
+requests # <--- NUEVO: Esencial para la comunicación con la API

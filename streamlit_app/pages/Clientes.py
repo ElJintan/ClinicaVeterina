@@ -1,38 +1,37 @@
+
 import streamlit as st
-import requests
+import sys
 import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from api_client import get_clients 
+# ... resto del código
+st.set_page_config(page_title='Clientes', layout='wide')
 
-API_URL = os.getenv("API_URL", "http://localhost:8000")
+st.title('👤 Gestión de Clientes')
+st.subheader('Listado y registro de dueños de mascotas.')
 
-st.title('Clientes — Clínica VetCare')
-st.write('Gestión de clientes con trazabilidad.')
-
-with st.form('new_client'):
-    name = st.text_input('Nombre completo')
-    email = st.text_input('Email')
-    phone = st.text_input('Teléfono')
-    address = st.text_input('Dirección')
-    submitted = st.form_submit_button('Guardar cliente')
-
-    if submitted:
-        payload = {
-            "name": name,
-            "email": email,
-            "phone": phone,
-            "address": address
-        }
-        try:
-            # Conexión real con el backend
-            response = requests.post(f"{API_URL}/clients/", json=payload)
-            
-            if response.status_code == 200:
-                data = response.json()
-                st.success(f"✅ Cliente guardado correctamente (ID: {data.get('id')})")
-                st.info("Log del sistema: Operación registrada en audit log.")
-            else:
-                # Aquí reflejamos el error (logueado como warning/error en backend)
-                error_detail = response.json().get('detail', 'Error desconocido')
-                st.error(f"⚠️ No se pudo guardar: {error_detail}")
+# Formulario para nuevo cliente
+with st.expander("➕ Añadir Nuevo Cliente"):
+    with st.form("client_form"):
+        name = st.text_input("Nombre Completo")
+        email = st.text_input("Email")
+        phone = st.text_input("Teléfono")
+        address = st.text_area("Dirección")
         
-        except requests.exceptions.ConnectionError:
-            st.error("🚨 Error crítico: No se puede conectar con el servidor backend.")
+        submitted = st.form_submit_button("Guardar Cliente")
+        if submitted:
+            # Aquí iría la lógica de llamada a la API para crear cliente
+            st.success(f"Cliente {name} añadido correctamente (Simulación).")
+            # Clear cache to reflect new data
+            get_clients.clear() 
+
+st.write("---")
+
+# Listado de clientes (Usando la API simulada)
+st.header("Clientes Registrados")
+client_data = get_clients()
+
+if client_data:
+    st.dataframe(client_data, use_container_width=True)
+else:
+    st.warning("No hay clientes registrados o el API no está disponible.")
