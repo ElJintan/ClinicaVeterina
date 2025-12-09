@@ -1,11 +1,13 @@
-# src/controllers/appointments_controller.py - CORREGIDO
+# src/controllers/appointments_controller.py - CÓDIGO FINAL CORREGIDO
+
 from fastapi import APIRouter, Depends, HTTPException, status
-from src.domain.models import Appointment, AppointmentCreate # Asumimos AppointmentCreate
+from typing import List
+from src.domain.models import Appointment, AppointmentCreate
 from src.services.appointment_service import AppointmentService
 from src.repositories.mongo_repo import MongoAppointmentRepository
 from src.infrastructure.logger_impl import LoggerImpl 
 
-router = APIRouter()
+router = APIRouter() # <--- ¡La variable 'router' debe estar aquí!
 
 # FIX: Inyección de Dependencias
 def get_appointment_service() -> AppointmentService:
@@ -26,3 +28,10 @@ async def create_appointment(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
     
     return appointment
+
+@router.get("/", response_model=List[Appointment])
+async def list_appointments_endpoint(
+    service: AppointmentService = Depends(get_appointment_service)
+):
+    """Obtiene la lista completa de citas."""
+    return await service.list_appointments()

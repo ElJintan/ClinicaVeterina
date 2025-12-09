@@ -118,6 +118,32 @@ class MongoBaseRepository(Generic[T, C]):
         result = await self.col.delete_one({'_id': entity_id})
         return result.deleted_count > 0
 
+# src/repositories/mongo_repo.py (Asegúrate de que estas clases estén añadidas)
+
 # Repositorios Específicos
 class MongoClientRepository(MongoBaseRepository[Client, ClientCreate], IClientRepository):
+    # Asumo que esta clase ya existía
     def __init__(self): super().__init__('clients', Client)
+
+# --- INICIO DE LOS REPOSITORIOS FALTANTES ---
+
+class MongoPetRepository(MongoBaseRepository[Pet, PetCreate], IPetRepository):
+    def __init__(self): super().__init__('pets', Pet)
+    async def list_by_owner(self, owner_id: str) -> List[Pet]:
+        # Implementación específica para la interfaz IPetRepository
+        return await self._list_by_field('client_id', owner_id)
+
+class MongoAppointmentRepository(MongoBaseRepository[Appointment, AppointmentCreate], IAppointmentRepository):
+    def __init__(self): super().__init__('appointments', Appointment)
+    async def list_by_pet(self, pet_id: str) -> List[Appointment]:
+        # Implementación específica para la interfaz IAppointmentRepository
+        return await self._list_by_field('pet_id', pet_id)
+
+class MongoMedicalRecordRepository(MongoBaseRepository[MedicalRecord, MedicalRecordCreate], IMedicalRecordRepository):
+    def __init__(self): super().__init__('medical_records', MedicalRecord)
+    async def list_by_pet(self, pet_id: str) -> List[MedicalRecord]:
+        # Implementación específica para la interfaz IMedicalRecordRepository
+        return await self._list_by_field('pet_id', pet_id)
+
+class MongoBillingRepository(MongoBaseRepository[Invoice, InvoiceCreate], IBillingRepository):
+    def __init__(self): super().__init__('billing', Invoice)

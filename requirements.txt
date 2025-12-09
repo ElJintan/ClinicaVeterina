@@ -1,4 +1,3 @@
-# requirements.txt - CÓDIGO CORREGIDO Y COMPLETO
 fastapi
 uvicorn[standard]
 pydantic
@@ -7,4 +6,5 @@ streamlit
 pytest
 pytest-asyncio
 requests
-email-validator  # <--- CRÍTICO: RESUELVE ModuleNotFoundError
+email-validator
+httpx
